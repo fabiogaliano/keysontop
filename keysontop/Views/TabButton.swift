@@ -21,6 +21,7 @@ struct TabButton: View {
                 Rectangle()
                     .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
             )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

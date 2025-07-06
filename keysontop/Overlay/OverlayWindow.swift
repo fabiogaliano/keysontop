@@ -68,9 +68,9 @@ class OverlayWindow: NSWindow {
         }
     }
     
-    // Override to prevent the window from becoming key when clicked
+    // Allow window to become key so search field can receive focus
     override var canBecomeKey: Bool {
-        return false
+        return true
     }
     
     // Override to prevent the window from becoming main

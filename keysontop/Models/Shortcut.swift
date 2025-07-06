@@ -1,27 +1,29 @@
 import Foundation
 
 struct Shortcut: Identifiable, Codable, Equatable {
-    let id: String
     let key: String
     let description: String
-    let category: String
     
-    init(id: String = UUID().uuidString, key: String, description: String, category: String) {
-        self.id = id
+    // Use the key as the identifier since it should be unique within a group
+    var id: String { key }
+    
+    init(key: String, description: String) {
         self.key = key
         self.description = description
-        self.category = category
     }
 }
 
 struct ShortcutGroup: Identifiable, Codable, Equatable {
-    let id: String
     let title: String
+    let category: String?
     let shortcuts: [Shortcut]
     
-    init(id: String = UUID().uuidString, title: String, shortcuts: [Shortcut]) {
-        self.id = id
+    // Use the title as the identifier since it should be unique within an app
+    var id: String { title }
+    
+    init(title: String, category: String? = nil, shortcuts: [Shortcut]) {
         self.title = title
+        self.category = category
         self.shortcuts = shortcuts
     }
 }
@@ -29,7 +31,7 @@ struct ShortcutGroup: Identifiable, Codable, Equatable {
 struct ApplicationShortcuts: Codable {
     let applicationId: String
     let applicationName: String
-    let version: String
+    let version: String?
     let groups: [ShortcutGroup]
 }
 
@@ -41,29 +43,32 @@ extension ApplicationShortcuts {
         groups: [
             ShortcutGroup(
                 title: "Navigation",
+                category: "navigation",
                 shortcuts: [
-                    Shortcut(key: "⌘↑", description: "Go to parent folder", category: "navigation"),
-                    Shortcut(key: "⌘↓", description: "Open selected item", category: "navigation"),
-                    Shortcut(key: "⌘[", description: "Go back", category: "navigation"),
-                    Shortcut(key: "⌘]", description: "Go forward", category: "navigation")
+                    Shortcut(key: "⌘↑", description: "Go to parent folder"),
+                    Shortcut(key: "⌘↓", description: "Open selected item"),
+                    Shortcut(key: "⌘[", description: "Go back"),
+                    Shortcut(key: "⌘]", description: "Go forward")
                 ]
             ),
             ShortcutGroup(
                 title: "File Operations",
+                category: "file",
                 shortcuts: [
-                    Shortcut(key: "⌘N", description: "New Finder window", category: "file"),
-                    Shortcut(key: "⌘⇧N", description: "New folder", category: "file"),
-                    Shortcut(key: "⌘D", description: "Duplicate", category: "file"),
-                    Shortcut(key: "⌘⌫", description: "Move to Trash", category: "file")
+                    Shortcut(key: "⌘N", description: "New Finder window"),
+                    Shortcut(key: "⌘⇧N", description: "New folder"),
+                    Shortcut(key: "⌘D", description: "Duplicate"),
+                    Shortcut(key: "⌘⌫", description: "Move to Trash")
                 ]
             ),
             ShortcutGroup(
                 title: "View",
+                category: "view",
                 shortcuts: [
-                    Shortcut(key: "⌘1", description: "Icon view", category: "view"),
-                    Shortcut(key: "⌘2", description: "List view", category: "view"),
-                    Shortcut(key: "⌘3", description: "Column view", category: "view"),
-                    Shortcut(key: "⌘4", description: "Gallery view", category: "view")
+                    Shortcut(key: "⌘1", description: "Icon view"),
+                    Shortcut(key: "⌘2", description: "List view"),
+                    Shortcut(key: "⌘3", description: "Column view"),
+                    Shortcut(key: "⌘4", description: "Gallery view")
                 ]
             )
         ]

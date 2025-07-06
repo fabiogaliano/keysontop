@@ -4,16 +4,18 @@ struct OverlayView: View {
     let application: Application
     let shortcutGroups: [ShortcutGroup]
     @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
     let onClose: () -> Void
     
     var filteredGroups: [ShortcutGroup] {
         if searchText.isEmpty {
             return shortcutGroups
         } else {
+            let searchResult = parseSearchQuery(searchText)
+            
             return shortcutGroups.compactMap { group in
                 let filteredShortcuts = group.shortcuts.filter { shortcut in
-                    shortcut.key.localizedCaseInsensitiveContains(searchText) ||
-                    shortcut.description.localizedCaseInsensitiveContains(searchText)
+                    matchesSearchCriteria(shortcut: shortcut, searchResult: searchResult)
                 }
                 
                 if filteredShortcuts.isEmpty {
@@ -52,6 +54,12 @@ struct OverlayView: View {
                     // Handle dragging - this will be handled by the window
                 }
         )
+        .onAppear {
+            // Auto-focus search field when overlay appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isSearchFocused = true
+            }
+        }
     }
     
     private var headerView: some View {
@@ -104,21 +112,26 @@ struct OverlayView: View {
     }
     
     private var searchBar: some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
+                .font(.system(size: 16))
             
-            TextField("Search shortcuts...", text: $searchText)
+            TextField("Search shortcuts... (try: -cmd open, -opt -shift)", text: $searchText)
                 .textFieldStyle(.plain)
+                .font(.system(size: 16))
+                .focused($isSearchFocused)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.quaternary)
-        )
         .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.quaternary)
+                .stroke(.separator, lineWidth: 0.5)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 16)
     }
     
     private var shortcutsList: some View {
@@ -149,6 +162,97 @@ struct OverlayView: View {
         
         guard startIndex < filteredGroups.count else { return [] }
         return Array(filteredGroups[startIndex..<endIndex])
+    }
+    
+    // MARK: - Smart Search Logic
+    
+    struct SearchCriteria {
+        let requiredKeys: Set<String>
+        let textTerms: [String]
+    }
+    
+    private func parseSearchQuery(_ query: String) -> SearchCriteria {
+        let components = query.split(separator: " ").map(String.init)
+        var requiredKeys = Set<String>()
+        var textTerms = [String]()
+        
+        for component in components {
+            if component.hasPrefix("-") {
+                let keyName = String(component.dropFirst())
+                if let symbol = mapKeyNameToSymbol(keyName) {
+                    requiredKeys.insert(symbol)
+                }
+            } else {
+                textTerms.append(component)
+            }
+        }
+        
+        return SearchCriteria(requiredKeys: requiredKeys, textTerms: textTerms)
+    }
+    
+    private func mapKeyNameToSymbol(_ keyName: String) -> String? {
+        let lowercaseKey = keyName.lowercased()
+        
+        switch lowercaseKey {
+        case "cmd", "command":
+            return "⌘"
+        case "opt", "option", "alt":
+            return "⌥"
+        case "shift":
+            return "⇧"
+        case "ctrl", "control":
+            return "⌃"
+        case "fn", "function":
+            return "fn"
+        case "space":
+            return "Space"
+        case "tab":
+            return "⇥"
+        case "esc", "escape":
+            return "⎋"
+        case "return", "enter":
+            return "↩"
+        case "delete", "backspace":
+            return "⌫"
+        case "forwarddelete":
+            return "⌦"
+        case "up":
+            return "↑"
+        case "down":
+            return "↓"
+        case "left":
+            return "←"
+        case "right":
+            return "→"
+        case "home":
+            return "⇱"
+        case "end":
+            return "⇲"
+        case "pageup":
+            return "⇞"
+        case "pagedown":
+            return "⇟"
+        default:
+            return nil
+        }
+    }
+    
+    private func matchesSearchCriteria(shortcut: Shortcut, searchResult: SearchCriteria) -> Bool {
+        // Check if all required keys are present
+        for requiredKey in searchResult.requiredKeys {
+            if !shortcut.key.contains(requiredKey) {
+                return false
+            }
+        }
+        
+        // Check if all text terms are present in description
+        for term in searchResult.textTerms {
+            if !shortcut.description.localizedCaseInsensitiveContains(term) {
+                return false
+            }
+        }
+        
+        return true
     }
 }
 

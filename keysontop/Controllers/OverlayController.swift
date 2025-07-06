@@ -65,6 +65,16 @@ class OverlayController: ObservableObject {
         }
     }
     
+    func refreshCurrentShortcuts() {
+        guard let app = currentApplication else { return }
+        currentShortcuts = shortcutDatabase.loadShortcuts(for: app.bundleIdentifier) ?? []
+        
+        // Update overlay if visible
+        if isVisible {
+            updateOverlayContent()
+        }
+    }
+    
     private func setupApplicationObserver() {
         applicationDetector.observeApplicationChanges { [weak self] application in
             DispatchQueue.main.async {
@@ -86,7 +96,16 @@ class OverlayController: ObservableObject {
         if let app = app {
             lastTargetApplication = app
             currentApplication = app
+            
+            // Debug logging
+            print("🔍 Active app: \(app.name) (\(app.bundleIdentifier))")
+            
             currentShortcuts = shortcutDatabase.loadShortcuts(for: app.bundleIdentifier) ?? []
+            
+            print("📋 Found \(currentShortcuts.count) shortcut groups for \(app.bundleIdentifier)")
+            if currentShortcuts.isEmpty {
+                print("⚠️  Available bundle IDs: \(Array(shortcutDatabase.shortcuts.keys))")
+            }
         } else {
             currentApplication = app
             currentShortcuts = []
